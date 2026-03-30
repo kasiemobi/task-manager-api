@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: SSH & Deploy Docker App
+      - name: SSH & Deploy Safely
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: 3.215.43.139
@@ -22,12 +22,20 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           script: |
-            echo "==== Connected to EC2 ===="
-            cd ~/task-manager-api
-            echo "==== Pulling latest code ===="
-            git pull origin main
-            echo "==== Stopping old containers ===="
-            docker-compose down
-            echo "==== Rebuilding and starting containers ===="
-            docker-compose up -d --build
-            echo "==== Deployment complete ===="
+            echo "==== CONNECTED TO EC2 ===="
+
+            cd ~/task-manager-api || exit 1
+
+            echo "==== PULLING LATEST CODE ===="
+            git pull origin main || exit 1
+
+            echo "==== STOPPING OLD CONTAINERS ===="
+            docker-compose down || true
+
+            echo "==== BUILDING & STARTING NEW CONTAINERS ===="
+            docker-compose up -d --build || exit 1
+
+            echo "==== CLEANING UNUSED IMAGES ===="
+            docker image prune -f || true
+
+            echo "==== DEPLOYMENT SUCCESSFUL 🚀 ===="
